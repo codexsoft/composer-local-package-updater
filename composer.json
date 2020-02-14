@@ -1,0 +1,22 @@
+{
+    "name": "codexsoft/composer-local-package-updater",
+    "description": "Overrides composer.json and installs packages from local repositories while developing application",
+    "type": "library",
+    "require": {
+        "php": "^7.0",
+        "symfony/filesystem": "^5.0",
+        "ext-json": "*"
+    },
+    "authors": [
+        {
+            "name": "Dmitriy V Kozubskiy",
+            "email": "kozubsky@inbox.ru"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "CodexSoft\\ComposerLocalPackageUpdater\\": "src/"
+        }
+    },
+    "minimum-stability": "stable"
+}
