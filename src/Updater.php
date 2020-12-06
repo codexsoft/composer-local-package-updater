@@ -17,6 +17,9 @@ class Updater
     /** @var array */
     private $packagesToOverride;
 
+    /** @var array */
+    private $packagesToRemove = [];
+
     /** @var string */
     private $composerCommand = 'composer';
 
@@ -28,6 +31,12 @@ class Updater
     private function output($msg)
     {
         echo "\n$msg";
+    }
+
+    public function remove(string $packageName): self
+    {
+        $this->packagesToRemove[] = $packageName;
+        return $this;
     }
 
     public function add(string $packageName, string $branchName, string $repoPath): self
@@ -66,10 +75,9 @@ class Updater
     public function run(bool $fast = false)
     {
         $fs = $this->fs;
-        $packagesToOverride = $this->packagesToOverride;
 
         $packageNames = [];
-        foreach ($packagesToOverride as $packageToOverride) {
+        foreach ($this->packagesToOverride as $packageToOverride) {
             $packageNames[] = $packageToOverride['packageName'];
         }
 
@@ -95,7 +103,13 @@ class Updater
                 $composerDecoded = \array_merge($composerDecoded, $this->mergeConfig);
             }
 
-            foreach ($packagesToOverride as $packageToOverride) {
+            foreach ($this->packagesToRemove as $packageToRemove) {
+                if (\array_key_exists($packageToRemove, $composerDecoded['require'])) {
+                    unset($composerDecoded['require'][$packageToRemove]);
+                }
+            }
+
+            foreach ($this->packagesToOverride as $packageToOverride) {
                 $composerDecoded['repositories'][] = [
                     'type' => 'path',
                     'url' => $packageToOverride['repoPath'],
@@ -117,7 +131,12 @@ class Updater
             $fs->dumpFile(self::COMPOSER_JSON_LOCAL,$composerEncoded);
         }
 
-        $this->executeCommand('COMPOSER='.self::COMPOSER_JSON_LOCAL." {$this->composerCommand} update ".\implode(' ', $packageNames)." {$this->composerOptions}", 'Updating packages from local branches...');
+        if ($this->packagesToRemove) {
+            $this->executeCommand('COMPOSER='.self::COMPOSER_JSON_LOCAL." {$this->composerCommand} update {$this->composerOptions}", 'Updating packages from local branches...');
+        } else {
+            $this->executeCommand('COMPOSER='.self::COMPOSER_JSON_LOCAL." {$this->composerCommand} update ".\implode(' ', $packageNames)." {$this->composerOptions}", 'Updating packages from local branches...');
+        }
+
         $this->output('Done!');
     }
 
@@ -173,4 +192,3 @@ class Updater
     }
 
 }
-
